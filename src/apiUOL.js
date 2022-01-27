@@ -9,16 +9,24 @@ server.use(express.json());
 server.use(cors());
 
 server.post('/participants', async (req, res) => {
-  try {
-    const validName = await checkUserName(req.body.name);
-    const newUserPromise = await insertUser({ name: validName });
-    console.log('inserted: ', newUserPromise);
-    res.status(201).send("Usuário inserido");
-
-  } catch (error) {
-    console.log(error);
-    console.log("Erro em 'post /participants'");
-    res.sendStatus(500);
+  const validName = await checkUserName(req.body.name);
+  if (validName === undefined) {
+    res.status(422).send('Nome inválido, tente novamente\n(sem espaços, 3-14 caracteres alfanuméricos)');
+    return;
+  }
+  else {
+    try {
+      const newUserPromise = await insertUser({ name: validName });
+      console.log('inserted: ', newUserPromise);
+      res.status(201).send("Usuário inserido");
+      return;
+  
+    } catch (error) {
+      console.log(error);
+      console.log("Erro em 'post /participants'");
+      res.sendStatus(500);
+      return;
+    }
   }
 });
 
