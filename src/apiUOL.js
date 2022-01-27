@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 
-import { connectToDB, insertUser } from './dbServices.js';
+import { connectToDB, insertUser, getUsers } from './dbServices.js';
 
 const server = express();
 server.use(express.json());
@@ -12,15 +12,9 @@ server.post('/participants', async (req, res) => {
   // validar input antes de conectar ao BD  
   //
   try {
-    const dbConnection = await connectToDB();
-    console.log('connected to database ->', dbConnection.s.url);
-
-    const db = dbConnection.db('apiUOL');
-    const usersCollection = db.collection('users');
-    console.log('inserted: ', await insertUser(usersCollection, req.body))
-
-
-    dbConnection.close();
+    
+    const userInsertionPromise = await insertUser(req.body);
+    console.log('inserted: ', userInsertionPromise);
     res.status(201).send("Usuário inserido");
 
   } catch (error) {
