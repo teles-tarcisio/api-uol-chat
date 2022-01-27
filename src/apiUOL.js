@@ -8,6 +8,21 @@ const server = express();
 server.use(express.json());
 server.use(cors());
 
+async function isUniqueUser(targetName) {
+  try {
+    const getUsersPromise = await getUsers();
+    const filteredByName = getUsersPromise.filter(user => (
+      user.name === targetName
+    ));
+    console.log(filteredByName);
+    return (filteredByName.length > 0);
+  } catch (error) {
+    console.log(error);
+    console.log('Erro buscando usuario por nome');
+    return false;
+  }
+}
+
 server.post('/participants', async (req, res) => {
   const validName = await checkUserName(req.body.name);
   if (validName === undefined) {
@@ -16,18 +31,25 @@ server.post('/participants', async (req, res) => {
   }
   else {
     try {
-      const newUserPromise = await insertUser({ name: validName });
-      console.log('inserted: ', newUserPromise);
-      res.status(201).send("Usuário inserido");
-      return;
-  
-    } catch (error) {
-      console.log(error);
-      console.log("Erro em 'post /participants'");
-      res.sendStatus(500);
-      return;
+      if (await isUniqueUser(validName)) {
+        console.log('já existe usuário com o nome informado');
+        res.status(409).send('Já existe usuário com este nome, escolha outro.');
+        return;
+      }
+      else {
+
+        const newUserPromise = await insertUser({ name: validName });
+        console.log('inserted: ', newUserPromise);
+        res.status(201).send("Usuário inserido");
+        return;
+      }
+      } catch (error) {
+        console.log(error);
+        console.log("Erro em 'post /participants'");
+        res.sendStatus(500);
+        return;
+      }
     }
-  }
 });
 
 server.get('/participants', async (req, res) => {
