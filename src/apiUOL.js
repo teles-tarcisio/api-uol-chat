@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 
-import { connectToDB, insertUser, getUsers } from './dbServices.js';
+import { insertUser, getUsers } from './dbServices.js';
 
 const server = express();
 server.use(express.json());
@@ -12,35 +12,26 @@ server.post('/participants', async (req, res) => {
   // validar input antes de conectar ao BD  
   //
   try {
-    
-    const userInsertionPromise = await insertUser(req.body);
-    console.log('inserted: ', userInsertionPromise);
+    const newUserPromise = await insertUser(req.body);
+    console.log('inserted: ', newUserPromise);
     res.status(201).send("Usuário inserido");
 
   } catch (error) {
     console.log(error);
-    console.log("Erro em '/post'");
+    console.log("Erro em 'post /participants'");
     res.sendStatus(500);
   }
 });
 
-server.get('/participants', (req, res) => {
-  const dbConnection = mongoClient.connect();
-
-  dbConnection.then(dbLink => {
-    const db = dbLink.db('apiUOL');
-    const usersCollection = db.collection('users');
-    const getUsersPromise = usersCollection.find().toArray();
-
-    getUsersPromise.then(search => res.send(search));
-    getUsersPromise.catch(console.log);
-  });
-
-
-  dbConnection.catch(err => {
-    console.log('error getting participants', err);
-    res.send(err);
-  });
+server.get('/participants', async (req, res) => {
+  try {
+    const getUsersPromise = await getUsers();
+    res.send(getUsersPromise);
+  } catch (error) {
+    console.log(error);
+    console.log("Erro em 'get /participants'");
+    res.sendStatus(500);
+  }
 });
 
 const serverPort = 4000;

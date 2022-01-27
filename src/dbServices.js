@@ -26,9 +26,9 @@ async function insertUser(newUser) {
         name: newUser.name,
         lastStatus: Date.now()
     });
-
     dbConnection.close();
     return insertionPromise.insertedId;
+
   } catch (error) {
     console.log(error);
     console.log("Erro ao inserir usuário");
@@ -36,10 +36,19 @@ async function insertUser(newUser) {
 }
 
 async function getUsers() {
-  
-  return;
+  try {
+    const dbConnection = await connectToDB();
+    const db = dbConnection.db('apiUOL');
+    const targetCollection = db.collection('users');
+    
+    const usersPromise = await targetCollection.find({}).toArray();
+    dbConnection.close();
+    return usersPromise;
+
+  } catch (error) {
+    console.log(error);
+    console.log("Erro ao buscar usuários");
+  }
 }
-
-
 
 export { connectToDB, insertUser, getUsers };
