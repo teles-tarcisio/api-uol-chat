@@ -1,43 +1,44 @@
 import express from 'express';
 import cors from 'cors';
-import { MongoClient } from 'mongodb';
-import dotenv from 'dotenv';
+
+import { connectToDB, insertUser } from './dbServices.js';
 
 const server = express();
 server.use(express.json());
 server.use(cors());
-dotenv.config();
 
-const mongoClient = new MongoClient(process.env.MONGO_URI);
+server.post('/participants', async (req, res) => {
+  //
+  // validar input antes de conectar ao BD  
+  //
+  try {
+    const dbConnection = await connectToDB();
+    console.log('connected to database ->', dbConnection.s.url);
 
-server.post('/participants', (req, res) => {
-  const dbConnection = mongoClient.connect();
-
-  dbConnection.then( dbLink => {
-    console.log('connected to db ->', dbLink.s.url);
-    const db = dbLink.db('apiUOL');
+    const db = dbConnection.db('apiUOL');
     const usersCollection = db.collection('users');
-    const newUserPromise = usersCollection.insertOne({name: req.body.name, lastStatus: Date.now() });
+    console.log('inserted: ', await insertUser(usersCollection, req.body))
 
-    newUserPromise.then(insertion => res.send(insertion));
-    newUserPromise.catch(console.log);
-  });
-  
-  dbConnection.catch(err => {
-    console.log('error posting participant', err);
-    res.send(err);
-  });
+
+    dbConnection.close();
+    res.status(201).send("Usuário inserido");
+
+  } catch (error) {
+    console.log(error);
+    console.log("Erro em '/post'");
+    res.sendStatus(500);
+  }
 });
 
 server.get('/participants', (req, res) => {
   const dbConnection = mongoClient.connect();
 
-  dbConnection.then( dbLink => {
+  dbConnection.then(dbLink => {
     const db = dbLink.db('apiUOL');
     const usersCollection = db.collection('users');
     const getUsersPromise = usersCollection.find().toArray();
 
-    getUsersPromise.then( search => res.send(search));
+    getUsersPromise.then(search => res.send(search));
     getUsersPromise.catch(console.log);
   });
 
