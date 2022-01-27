@@ -2,17 +2,16 @@ import express from 'express';
 import cors from 'cors';
 
 import { insertUser, getUsers } from './dbServices.js';
+import { checkUserName } from './joiValidations.js';
 
 const server = express();
 server.use(express.json());
 server.use(cors());
 
 server.post('/participants', async (req, res) => {
-  //
-  // validar input antes de conectar ao BD  
-  //
   try {
-    const newUserPromise = await insertUser(req.body);
+    const validName = await checkUserName(req.body.name);
+    const newUserPromise = await insertUser({ name: validName });
     console.log('inserted: ', newUserPromise);
     res.status(201).send("Usuário inserido");
 
