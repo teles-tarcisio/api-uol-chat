@@ -1,7 +1,8 @@
 import express from 'express';
 import cors from 'cors';
+import dayjs from 'dayjs';
 
-import { insertUser, getUsers } from './dbServices.js';
+import { insertUser, getUsers, insertMessage } from './dbServices.js';
 import { checkUserName } from './joiValidations.js';
 
 const server = express();
@@ -14,7 +15,6 @@ async function isUniqueUser(targetName) {
     const filteredByName = getUsersPromise.filter(user => (
       user.name === targetName
     ));
-    console.log(filteredByName);
     return (filteredByName.length > 0);
   } catch (error) {
     console.log(error);
@@ -23,8 +23,27 @@ async function isUniqueUser(targetName) {
   }
 }
 
+async function logNewUser(newUserData) {
+  const userArrival = {
+    from: newUserData.name,
+    to: 'Todos',
+    text: 'entra na sala...',
+    type: 'status',
+    time: dayjs(newUserData.lastStatus).format("HH:mm:ss")
+  };
+
+  try {
+    const newUserMessage = await insertMessage(userArrival);    
+    return newUserMessage;
+  } catch (error) {
+    console.log(error);
+    console.log("Erro inserindo msg userArrived");
+  }
+}
+
+
 server.post('/participants', async (req, res) => {
-  const validName = await checkUserName(req.body.name);
+  const validName = checkUserName(req.body.name);
   if (validName === undefined) {
     res.status(422).send('Nome inválido, tente novamente\n(sem espaços, 3-14 caracteres alfanuméricos)');
     return;
@@ -32,15 +51,22 @@ server.post('/participants', async (req, res) => {
   else {
     try {
       if (await isUniqueUser(validName)) {
-        console.log('já existe usuário com o nome informado');
         res.status(409).send('Já existe usuário com este nome, escolha outro.');
         return;
       }
       else {
+        const newUserData = {
+          name: validName,
+          lastStatus: Date.now()
+        };
 
-        const newUserPromise = await insertUser({ name: validName });
-        console.log('inserted: ', newUserPromise);
-        res.status(201).send("Usuário inserido");
+        const newUserPromise = await insertUser(newUserData);
+        console.log('new user inserted: ', newUserPromise);
+
+        const newUserArrived = await logNewUser(newUserData);
+        console.log('entrou na sala: ', newUserArrived);
+
+        res.status(201);
         return;
       }
       } catch (error) {
@@ -62,6 +88,7 @@ server.get('/participants', async (req, res) => {
     res.sendStatus(500);
   }
 });
+
 
 const serverPort = 4000;
 server.listen(serverPort, () => {

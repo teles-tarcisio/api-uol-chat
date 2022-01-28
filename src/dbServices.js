@@ -21,11 +21,7 @@ async function insertUser(newUser) {
     const db = dbConnection.db('apiUOL');
     const targetCollection = db.collection('users');
     
-    const insertionPromise = await targetCollection.insertOne(
-      { 
-        name: newUser.name,
-        lastStatus: Date.now()
-    });
+    const insertionPromise = await targetCollection.insertOne(newUser);
     dbConnection.close();
     return insertionPromise.insertedId;
 
@@ -51,4 +47,20 @@ async function getUsers() {
   }
 }
 
-export { connectToDB, insertUser, getUsers };
+async function insertMessage(newMessage) {
+  try {
+    const dbConnection = await connectToDB();
+    const db = dbConnection.db('apiUOL');
+    const targetCollection = db.collection('messages');
+
+    const messagePromise = await targetCollection.insertOne(newMessage);
+    dbConnection.close();
+    return messagePromise.insertedId;    
+
+  } catch (error) {
+    console.log(error);
+    console.log("Erro ao inserir nova mensagem");
+  }
+}
+
+export { connectToDB, insertUser, getUsers, insertMessage };
