@@ -42,32 +42,35 @@ async function logNewUser(newUserData) {
 
 
 server.post('/participants', async (req, res) => {
-  const validName = checkUserName(req.body.name);
-  if (validName === undefined) {
+  const validName = checkUserName(req.body);
+  if (validName.error !== undefined) {
+    console.log('joi error -> username', validName.error.details[0].type);
     res.status(422).send('Nome inválido, tente novamente\n(sem espaços, 3-14 caracteres alfanuméricos)');
     return;
   }
   else {
     try {
-      if (!await isNameUnique(validName.value)) {
+      if (!await isNameUnique(validName.value.name)) {
         res.status(409).send('Já existe usuário com este nome, escolha outro.');
         return;
       }
       else {      
         const newUserData = {
-          name: validName.value,
+          name: validName.value.name,
           lastStatus: Date.now()
         };
-        
+        console.log('--> passed joi: ', newUserData);
+                
         const newUserPromise = await insertUser(newUserData);
         console.log('new user inserted: ', newUserPromise);
-
+        
         const newUserArrived = await logNewUser(newUserData);
         console.log('entrou na sala: ', newUserArrived);
         
         res.sendStatus(201);
         return;
       }
+      
       } catch (error) {
         console.log(error);
         console.log("Erro em 'post /participants'");
@@ -86,6 +89,12 @@ server.get('/participants', async (req, res) => {
     console.log("Erro em 'get /participants'");
     res.sendStatus(500);
   }
+});
+
+server.post('/messages', async (req, res) => {
+  console.log(req.headers);
+
+  res.sendStatus(501);
 });
 
 
