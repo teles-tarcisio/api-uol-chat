@@ -9,17 +9,16 @@ const server = express();
 server.use(express.json());
 server.use(cors());
 
-async function isUniqueUser(targetName) {
-  try {
-    const getUsersPromise = await getUsers();
-    const filteredByName = getUsersPromise.filter(user => (
-      user.name === targetName
-    ));
-    return (filteredByName.length > 0);
-  } catch (error) {
-    console.log(error);
-    console.log('Erro buscando usuario por nome');
+async function isNameUnique(targetName) {
+  const getUsersPromise = await getUsers();
+  const filteredByName = getUsersPromise.filter (user => (
+    user.name === targetName)
+  );
+  if (filteredByName.length > 0) {
     return false;
+  }
+  else {
+    return true;
   }
 }
 
@@ -50,23 +49,23 @@ server.post('/participants', async (req, res) => {
   }
   else {
     try {
-      if (await isUniqueUser(validName)) {
+      if (!await isNameUnique(validName.value)) {
         res.status(409).send('Já existe usuário com este nome, escolha outro.');
         return;
       }
-      else {
+      else {      
         const newUserData = {
-          name: validName,
+          name: validName.value,
           lastStatus: Date.now()
         };
-
+        
         const newUserPromise = await insertUser(newUserData);
         console.log('new user inserted: ', newUserPromise);
 
         const newUserArrived = await logNewUser(newUserData);
         console.log('entrou na sala: ', newUserArrived);
-
-        res.status(201);
+        
+        res.sendStatus(201);
         return;
       }
       } catch (error) {
