@@ -7,7 +7,6 @@ const mongoClient = new MongoClient(process.env.MONGO_URI);
 async function connectToDB() {
   try {
     const connection= await mongoClient.connect();
-    console.log('connected to database ->', connection.s.url);
     return connection;
   } catch (error) {
     console.log(error);
@@ -43,7 +42,7 @@ async function getUsers() {
 
   } catch (error) {
     console.log(error);
-    console.log("Erro ao buscar usuários");
+    console.log('Erro ao buscar usuários');
   }
 }
 
@@ -63,6 +62,22 @@ async function insertMessage(newMessage) {
   }
 }
 
+async function getMessages(quantity) {
+  try {
+    const dbConnection = await connectToDB();
+    const db = dbConnection.db('apiUOL');
+    const targetCollection = db.collection('messages');
+
+    const messagesPromise = await targetCollection.find({}).toArray();
+    dbConnection.close();
+    return messagesPromise;
+
+  } catch (error) {
+    console.log(error);
+    console.log('Erro ao buscar mensagens');
+    return error;
+  }
+}
 
 
-export { connectToDB, insertUser, getUsers, insertMessage };
+export { connectToDB, insertUser, getUsers, insertMessage, getMessages };

@@ -6,10 +6,6 @@ const userNameSchema = Joi.object(
   }
 );
 
-function checkUserName(user) {
-  return userNameSchema.validate(user);
-}
-
 const messageSchema = Joi.object(
   {
     from: Joi.string(),
@@ -20,8 +16,22 @@ const messageSchema = Joi.object(
   }
 );
 
+const limitMessagesSchema = Joi.object(
+  {
+    limit: Joi.number().min(0)
+  }
+);
+
+function checkUserName(user) {
+  return userNameSchema.validate(user);
+}
+
 function checkMessage(message) {
   return messageSchema.validate(message);
 }
 
-export { checkUserName, checkMessage };
+function checkLimitedMessages(limit) {
+  return limitMessagesSchema.validate(limit);
+}
+
+export { checkUserName, checkMessage, checkLimitedMessages };

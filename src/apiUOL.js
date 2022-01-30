@@ -2,8 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import dayjs from 'dayjs';
 
-import { insertUser, getUsers, insertMessage } from './dbServices.js';
-import { checkUserName, checkMessage } from './joiValidations.js';
+import { insertUser, getUsers, insertMessage, getMessages } from './dbServices.js';
+import { checkUserName, checkMessage, checkLimitedMessages } from './joiValidations.js';
 
 const server = express();
 server.use(express.json());
@@ -59,13 +59,12 @@ server.post('/participants', async (req, res) => {
           name: validName.value.name,
           lastStatus: Date.now()
         };
-        console.log('--> passed joi: ', newUserData);
-
+        
         const newUserPromise = await insertUser(newUserData);
         console.log('new user inserted: ', newUserPromise);
 
         const newUserArrived = await logNewUser(newUserData);
-        console.log('entrou na sala: ', newUserArrived);
+        console.log('msg entrou na sala: ', newUserArrived);
 
         res.sendStatus(201);
         return;
@@ -88,6 +87,7 @@ server.get('/participants', async (req, res) => {
     console.log(error);
     console.log("Erro em 'get /participants'");
     res.sendStatus(500);
+    return;
   }
 });
 
@@ -114,7 +114,7 @@ server.post('/messages', async (req, res) => {
     res.sendStatus(422);
     return;
   }
-  
+
   try {
     const newMessagePosted = await insertMessage(isMessageValid.value);
     console.log('mensagem postada: ', newMessagePosted);
@@ -127,6 +127,26 @@ server.post('/messages', async (req, res) => {
     return;
   }
 });
+
+server.get('/messages', async (req, res) => {
+  console.log(checkLimitedMessages(req.query));
+  
+  res.sendStatus(501);
+  
+  /*
+  try {
+    const getMessagesPromise = await getMessages(limit);
+
+    res.status(201).send(getMessagesPromise));
+    
+  } catch (error) {
+    console.log("Erro em 'get /messages'");
+    res.sendStatus(500);
+    return;
+  }
+  */
+});
+
 
 const serverPort = 4000;
 server.listen(serverPort, () => {
