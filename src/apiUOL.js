@@ -3,13 +3,13 @@ import cors from 'cors';
 import dayjs from 'dayjs';
 
 import { insertUser, getUsers, insertMessage } from './dbServices.js';
-import { checkUserName } from './joiValidations.js';
+import { checkUserName, checkMessage } from './joiValidations.js';
 
 const server = express();
 server.use(express.json());
 server.use(cors());
 
-async function isNameUnique(targetName) {
+async function userExists(targetName) {
   const getUsersPromise = await getUsers();
   const filteredByName = getUsersPromise.filter (user => (
     user.name === targetName)
@@ -50,7 +50,7 @@ server.post('/participants', async (req, res) => {
   }
   else {
     try {
-      if (!await isNameUnique(validName.value.name)) {
+      if (!await userExists(validName.value.name)) {
         res.status(409).send('Já existe usuário com este nome, escolha outro.');
         return;
       }
@@ -92,11 +92,41 @@ server.get('/participants', async (req, res) => {
 });
 
 server.post('/messages', async (req, res) => {
-  console.log(req.headers);
+  const sender = req.headers.user;
+  const testMessage = {
+    from: sender, //precisa usar `${ }` ?
+    to: req.body.to,
+    text: req.body.text,
+    type: req.body.type,
+    time: dayjs().format("HH:mm:ss")
+  }
+  console.log('message format: ', testMessage);
 
-  res.sendStatus(501);
+  //valid recipient ?
+  const isRecipientValid = !(await userExists(testMessage.to));
+  console.log('to: ', testMessage.to);
+  console.log('recipient exists? ', isRecipientValid);
+  if (isRecipientValid) {
+    //proceed, check joi
+
+    //insert message in db
+
+    //return as 'success'
+    res.sendStatus(501);
+  }
+  else {
+    res.sendStatus(422);
+  }
 });
 
+const testMessage = {
+  from: 'emitente',
+  to: 'destinatario',
+  text: 'mandano messagi',
+  type: 'message',
+  time: dayjs().format("HH:mm:ss")
+};
+console.log('testMessage: ', checkMessage(testMessage));
 
 const serverPort = 4000;
 server.listen(serverPort, () => {

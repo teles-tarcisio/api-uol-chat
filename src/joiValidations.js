@@ -10,5 +10,19 @@ function checkUserName(user) {
   return userNameSchema.validate(user);
 }
 
+const messageSchema = Joi.object(
+  {
+    from: Joi.string(),
+    to: Joi.string().trim().required(),
+    text: Joi.string().trim().required(),
+    type: Joi.string().valid('private_message', 'message'),
+    time: Joi.string()
+  }
 
-export { checkUserName };
+);
+
+function checkMessage(message) {
+  return messageSchema.validate(message);
+}
+
+export { checkUserName, checkMessage };
