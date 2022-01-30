@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dayjs from 'dayjs';
 
-import { insertUser, getUsers, insertMessage, getMessages } from './dbServices.js';
+import { insertUser, getUsers, insertMessage, getMessages, getFilteredMessages } from './dbServices.js';
 import { checkUserName, checkMessage, checkLimitedMessages } from './joiValidations.js';
 
 const server = express();
@@ -20,7 +20,7 @@ async function userExists(targetName) {
   else {
     return true;
   }
-}
+};
 
 async function logNewUser(newUserData) {
   const userArrival = {
@@ -38,7 +38,7 @@ async function logNewUser(newUserData) {
     console.log(error);
     console.log("Erro inserindo msg userArrived");
   }
-}
+};
 
 
 server.post('/participants', async (req, res) => {
@@ -59,7 +59,7 @@ server.post('/participants', async (req, res) => {
           name: validName.value.name,
           lastStatus: Date.now()
         };
-        
+
         const newUserPromise = await insertUser(newUserData);
         console.log('new user inserted: ', newUserPromise);
 
@@ -100,14 +100,14 @@ server.post('/messages', async (req, res) => {
     type: req.body.type,
     time: dayjs().format("HH:mm:ss")
   }
-  
+
   const isSenderValid = !(await userExists(sender));
   if (!isSenderValid) {
     console.log('Erro -> emitente não existe.');
     res.sendStatus(422);
     return;
   }
-  
+
   const isMessageValid = checkMessage(uncheckedMessage);
   if (isMessageValid.error !== undefined) {
     console.log(' --> ', isMessageValid.error.details[0].type);
@@ -129,22 +129,33 @@ server.post('/messages', async (req, res) => {
 });
 
 server.get('/messages', async (req, res) => {
-  console.log(checkLimitedMessages(req.query));
-  
-  res.sendStatus(501);
-  
-  /*
   try {
-    const getMessagesPromise = await getMessages(limit);
+    console.log('TODAS AS MSGS: ', await getMessages());
 
-    res.status(201).send(getMessagesPromise));
-    
+    console.log('filter to: ', req.headers.user);
+    const filteredMessagesArray = await getFilteredMessages(req.headers.user);
+    console.log(filteredMessagesArray);    
+
+    /*
+    if (!req.query.limit) {
+      console.log(' --> sem "limit" ');
+      res.status(201).send(allMessagesArray);
+      return;
+    }
+    */
+
+
+    res.status(501);//.send(allMessagesArray);
+
+    //const checkLimit = checkLimitedMessages(req.query);
+    //
+    //console.log('joi msg limit error -> ', checkLimit.error.details[0].type);
+
   } catch (error) {
     console.log("Erro em 'get /messages'");
     res.sendStatus(500);
     return;
   }
-  */
 });
 
 

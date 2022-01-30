@@ -18,7 +18,7 @@ const messageSchema = Joi.object(
 
 const limitMessagesSchema = Joi.object(
   {
-    limit: Joi.number().min(0)
+    limit: Joi.number().min(1)
   }
 );
 
