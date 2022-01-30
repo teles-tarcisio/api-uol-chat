@@ -18,7 +18,6 @@ const messageSchema = Joi.object(
     type: Joi.string().valid('private_message', 'message'),
     time: Joi.string()
   }
-
 );
 
 function checkMessage(message) {
