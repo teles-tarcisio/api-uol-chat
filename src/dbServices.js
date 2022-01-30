@@ -87,11 +87,11 @@ async function getFilteredMessages(user) {
 
     const filteredMessagesPromise = await targetCollection.find({
       $or:[
-        {type:"message"},
+        {type:'message'},
+        {from: user },
         { $and:[
           {type:"private_message"},
-          {to: user },
-          {from: user }
+          {to: user }
           ]
         }
       ]}).toArray();
@@ -111,5 +111,6 @@ export { connectToDB, insertUser, getUsers, insertMessage, getMessages, getFilte
 
 
 /*
-db.messages.find({$or: [{type:'message'}, {$and: [{ type: 'private_message'}, {to: 'ramiro00'}, {from: 'ramiro00'}]} ]})
+db.messages.find({$or: [{type:'message'}, {from:'ramiro00'}, {$and: [{ type: 'private_message'}, {to: 'ramiro00'}]}]})
+
 */
