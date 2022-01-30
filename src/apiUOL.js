@@ -130,12 +130,10 @@ server.post('/messages', async (req, res) => {
 
 server.get('/messages', async (req, res) => {
   try {
-    console.log('TODAS AS MSGS: ', await getMessages());
-
     console.log('filter to: ', req.headers.user);
     const filteredMessagesArray = await getFilteredMessages(req.headers.user);
-    console.log(filteredMessagesArray);    
-
+    console.log('TODAS AS MSGS: ', await getMessages());
+    
     /*
     if (!req.query.limit) {
       console.log(' --> sem "limit" ');
@@ -143,9 +141,9 @@ server.get('/messages', async (req, res) => {
       return;
     }
     */
-
-
-    res.status(501);//.send(allMessagesArray);
+    
+    res.status(501).send(filteredMessagesArray);
+    
 
     //const checkLimit = checkLimitedMessages(req.query);
     //

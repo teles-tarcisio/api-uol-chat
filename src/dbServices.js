@@ -103,7 +103,6 @@ async function getFilteredMessages(user) {
     console.log('Erro ao buscar mensagens');
     return error;
   }
-
 }
 
 export { connectToDB, insertUser, getUsers, insertMessage, getMessages, getFilteredMessages };
