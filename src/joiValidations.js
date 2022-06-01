@@ -2,13 +2,13 @@ import Joi from 'joi';
 
 const userNameSchema = Joi.object(
   {
-    name: Joi.string().trim().min(3).max(14).alphanum().required()
+    name: Joi.string().trim().min(3).max(16).alphanum().required()
   }
 );
 
 const messageSchema = Joi.object(
   {
-    from: Joi.string(),
+    from: Joi.string().required(),
     to: Joi.string().trim().required(),
     text: Joi.string().trim().required(),
     type: Joi.string().valid('private_message', 'message'),
@@ -30,8 +30,7 @@ function checkMessage(message) {
   return messageSchema.validate(message);
 }
 
-function checkLimitedMessages(limit) {
-  return limitMessagesSchema.validate(limit);
-}
-
-export { checkUserName, checkMessage, checkLimitedMessages };
+export {
+  checkUserName,
+  checkMessage,
+};

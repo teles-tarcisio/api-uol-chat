@@ -14,7 +14,7 @@
   "main": "./src/apiUOL.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "npx nodemon ./src/apiUOL.js"
+    "dev": "npx nodemon ./src/apiUOL.js"
   },
   "repository": {
     "type": "git",

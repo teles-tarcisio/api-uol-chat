@@ -25,12 +25,12 @@ async function insertUser(newUser) {
     return insertionPromise.insertedId;
 
   } catch (error) {
-    console.log(error);
-    console.log("Erro ao inserir usuário");
+    console.error(error);
+    console.error("Erro ao inserir usuário");
   }
 };
 
-async function getUsers() {
+async function getAllUsers() {
   try {
     const dbConnection = await connectToDB();
     const db = dbConnection.db('apiUOL');
@@ -41,8 +41,8 @@ async function getUsers() {
     return usersPromise;
 
   } catch (error) {
-    console.log(error);
-    console.log('Erro ao buscar usuários');
+    console.error(error);
+    console.error('Erro ao buscar usuários');
   }
 };
 
@@ -57,8 +57,8 @@ async function insertMessage(newMessage) {
     return messagePromise.insertedId;    
 
   } catch (error) {
-    console.log(error);
-    console.log("Erro ao inserir nova mensagem");
+    console.error(error);
+    console.error("Erro ao inserir nova mensagem");
   }
 };
 
@@ -97,19 +97,62 @@ async function getFilteredMessages(user) {
       ]}).toArray();
     dbConnection.close();
     return filteredMessagesPromise;
-
+    
   } catch (error) {
-    console.log(error);
-    console.log('Erro ao buscar mensagens');
+    console.error(error);
+    console.error('Erro ao buscar mensagens de/para usuário');
     return error;
   }
 }
 
-export { connectToDB, insertUser, getUsers, insertMessage, getMessages, getFilteredMessages };
+async function findUserByName(targetName) {
+  try {
+    const dbConnection = await connectToDB();
+    const db = dbConnection.db('apiUOL');
+    const targetCollection = db.collection('users');
+    const findUserPromise = await targetCollection.find({
+      name: targetName,
+    }).toArray();
+    dbConnection.close();
+    return findUserPromise;
 
+  } catch (error) {
+    console.error(error);
+    console.error('Erro ao buscar usuário por nome');
+  }
+}
 
+async function updateUserStatus(targetName) {
+  try {
+    const dbConnection = await connectToDB();
+    const db = dbConnection.db('apiUOL');
+    const targetCollection = db.collection('users');
+    const updatedStatus = await targetCollection.findOneAndUpdate(
+      {
+      name: targetName
+      },
+      {
+        $set: {
+          lastStatus: Date.now()
+        }
+      }
+    );
+    dbConnection.close();
+    return updatedStatus;
 
-/*
-db.messages.find({$or: [{type:'message'}, {from:'ramiro00'}, {$and: [{ type: 'private_message'}, {to: 'ramiro00'}]}]})
+  } catch (error) {
+    console.error(error);
+    console.error('Erro atualizando status do usuário');
+  }
+}
 
-*/
+export {
+  connectToDB,
+  insertUser,
+  getAllUsers,
+  insertMessage,
+  getMessages,
+  getFilteredMessages,
+  findUserByName,
+  updateUserStatus,
+};

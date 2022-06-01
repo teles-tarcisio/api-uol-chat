@@ -2,23 +2,30 @@ import express from 'express';
 import cors from 'cors';
 import dayjs from 'dayjs';
 
-import { insertUser, getUsers, insertMessage, getMessages, getFilteredMessages } from './dbServices.js';
-import { checkUserName, checkMessage, checkLimitedMessages } from './joiValidations.js';
+import {
+  insertUser,
+  getAllUsers,
+  insertMessage,
+  getFilteredMessages,
+  findUserByName,
+  updateUserStatus,
+} from './dbServices.js';
+import {
+  checkUserName,
+  checkMessage,
+} from './joiValidations.js';
 
 const server = express();
 server.use(express.json());
 server.use(cors());
 
 async function userExists(targetName) {
-  const getUsersPromise = await getUsers();
-  const filteredByName = getUsersPromise.filter(user => (
-    user.name === targetName)
-  );
-  if (filteredByName.length > 0) {
-    return false;
+  const getUserPromise = await findUserByName(targetName);
+  if (getUserPromise.length > 0) {
+    return true;
   }
   else {
-    return true;
+    return false;
   }
 };
 
@@ -42,52 +49,47 @@ async function logNewUser(newUserData) {
 
 
 server.post('/participants', async (req, res) => {
-  const validName = checkUserName(req.body);
-  if (validName.error !== undefined) {
-    console.log('joi error -> username', validName.error.details[0].type);
-    res.status(422).send('Nome inválido, tente novamente\n(sem espaços, 3-14 caracteres alfanuméricos)');
-    return;
+  const userNickname = checkUserName(req.body);
+  console.log(userNickname);
+  if (userNickname.error !== undefined) {
+    console.log('joi error, username: ', userNickname.error.details[0].type);
+    return res.status(422).send('Nome inválido, tente novamente\n(sem espaços/acentos, 3-16 caracteres alfanuméricos)');
   }
   else {
+    const userName = userNickname.value.name;
     try {
-      if (!await userExists(validName.value.name)) {
-        res.status(409).send('Já existe usuário com este nome, escolha outro.');
-        return;
+      if (!await userExists(userName)) {
+        return res.status(409).send('Já existe usuário com este nome, escolha outro.');
       }
       else {
         const newUserData = {
-          name: validName.value.name,
+          name: userName,
           lastStatus: Date.now()
         };
 
-        const newUserPromise = await insertUser(newUserData);
-        console.log('new user inserted: ', newUserPromise);
-
-        const newUserArrived = await logNewUser(newUserData);
-        console.log('msg entrou na sala: ', newUserArrived);
-
-        res.sendStatus(201);
-        return;
+        await insertUser(newUserData);
+        
+        await logNewUser(newUserData);
+        
+        return res.sendStatus(201);
       }
 
     } catch (error) {
       console.log(error);
       console.log("Erro em 'post /participants'");
-      res.sendStatus(500);
-      return;
+      return res.sendStatus(500);
     }
   }
 });
 
 server.get('/participants', async (req, res) => {
   try {
-    const getUsersPromise = await getUsers();
-    res.send(getUsersPromise);
+    const getUsersPromise = await getAllUsers();
+    return res.send(getUsersPromise);
   } catch (error) {
-    console.log(error);
-    console.log("Erro em 'get /participants'");
-    res.sendStatus(500);
-    return;
+    console.error(error);
+    console.error("Erro em 'get /participants'");
+    return res.sendStatus(500);
   }
 });
 
@@ -101,63 +103,64 @@ server.post('/messages', async (req, res) => {
     time: dayjs().format("HH:mm:ss")
   }
 
-  const isSenderValid = !(await userExists(sender));
-  if (!isSenderValid) {
-    console.log('Erro -> emitente não existe.');
-    res.sendStatus(422);
-    return;
+  const isSenderExistent = await userExists(sender);
+  if (!isSenderExistent) {
+    console.error('Erro -> emitente não existe.');
+    return res.sendStatus(422);
   }
 
-  const isMessageValid = checkMessage(uncheckedMessage);
-  if (isMessageValid.error !== undefined) {
-    console.log(' --> ', isMessageValid.error.details[0].type);
-    res.sendStatus(422);
-    return;
+  const validatedMessage = checkMessage(uncheckedMessage);
+  if (validatedMessage.error !== undefined) {
+    console.error(' --> ', validatedMessage.error.details[0].type);
+    return res.sendStatus(422);
   }
 
   try {
-    const newMessagePosted = await insertMessage(isMessageValid.value);
-    console.log('mensagem postada: ', newMessagePosted);
-    res.sendStatus(201);
-    return;
+    await insertMessage(validatedMessage.value);
+    return res.sendStatus(201);
 
   } catch (error) {
-    console.log('Erro db postar mensagem', error);
-    res.sendStatus(422);
-    return;
+    console.error('Erro db postar mensagem', error);
+    return res.sendStatus(422);
   }
 });
 
 server.get('/messages', async (req, res) => {
   try {
-    console.log('filter to: ', req.headers.user);
+    const targetUser = req.headers.user;
+    const limit = req.query?.limit;
     const filteredMessagesArray = await getFilteredMessages(req.headers.user);
-    console.log('TODAS AS MSGS: ', await getMessages());
     
-    /*
-    if (!req.query.limit) {
-      console.log(' --> sem "limit" ');
-      res.status(201).send(allMessagesArray);
-      return;
+    if (limit === null || limit === undefined || limit === '') {
+      return res.status(201).send(filteredMessagesArray);
     }
-    */
-    
-    res.status(501).send(filteredMessagesArray);
-    
-
-    //const checkLimit = checkLimitedMessages(req.query);
-    //
-    //console.log('joi msg limit error -> ', checkLimit.error.details[0].type);
-
+    else {
+      const numberedLimit = parseInt(limit);
+      const limitedMessages = filteredMessagesArray.slice(-numberedLimit);
+      return res.status(201).send(limitedMessages);
+    }
   } catch (error) {
-    console.log("Erro em 'get /messages'");
-    res.sendStatus(500);
-    return;
+    console.error("Erro em 'get /messages'");
+    console.error(error);
+    return res.sendStatus(500);
   }
 });
 
+server.post('/status', async (req, res) => {
+  const targetUser = req.headers?.user;
+  const isUserExistent = await userExists(targetUser);
+  
+  if (targetUser === null || targetUser === undefined || targetUser === '' || !isUserExistent) {
+    console.log('usuario nao consta na lista de participantes!');
+    return res.sendStatus(404);
+  }
 
-const serverPort = 4000;
+  await updateUserStatus(targetUser);
+  return res.sendStatus(200);
+});
+
+
+const serverPort = 5000;
 server.listen(serverPort, () => {
-  console.log(`server running, http://localhost:${serverPort}`);
+  console.log(`Server running, http://localhost:${serverPort}`);
 });
